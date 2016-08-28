@@ -7,7 +7,7 @@
 {% if my_games %}
 <ul>
 {% for game in my_games %}
-<li><a href="{% url 'game_update' pk=game.pk %}">{{ game }}</a></li>
+<li><a href="{% url 'game_admin' pk=game.pk %}">{{ game }}</a></li>
 {% endfor %}
 </ul>
 {% endif %}

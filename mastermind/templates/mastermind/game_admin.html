@@ -6,6 +6,6 @@
 {% for slot in game.slot_set.all %}
 <li>{{ slot }}</li>
 {% endfor %}
-<li><a href="{% url 'game_slot_create' %}">Tilføj indgange</a></li>
+<li><a href="{% url 'game_slot_create' pk=game.pk %}">Tilføj indgange</a></li>
 </ul>
 {% endblock %}

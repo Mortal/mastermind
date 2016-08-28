@@ -29,6 +29,7 @@ def get_profile(request):
 
 
 def get_or_create_profile(request):
+    KEY = 'mastermind_profile_id'
     if request.profile:
         return request.profile
     p = Profile()
@@ -36,14 +37,18 @@ def get_or_create_profile(request):
         p.user = request.user
     p.save()
     request.profile = p
-    request.session['kasse_profile_id'] = p.pk
+    request.session[KEY] = p.pk
     return p
 
 
 class Middleware(object):
-    def process_request(self, request):
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
         request.profile = SimpleLazyObject(functools.partial(
             get_profile, request))
         request.get_or_create_profile = functools.partial(
             get_or_create_profile, request)
         request.log_data = {'ip': get_real_ip(request)}
+        return self.get_response(request)

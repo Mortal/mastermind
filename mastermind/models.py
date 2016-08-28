@@ -25,7 +25,7 @@ class Game(models.Model):
     title = models.CharField(max_length=100)
 
     def __str__(self):
-        return self.title
+        return '%s' % (self.title,)
 
     class Meta:
         verbose_name = 'spil'
@@ -60,7 +60,7 @@ class Option(models.Model):
             self.alias_target = None
 
     def __str__(self):
-        return self.text
+        return '%s' % (self.text,)
 
     class Meta:
         verbose_name = 'valgmulighed'
@@ -76,7 +76,7 @@ class Slot(models.Model):
         Option, on_delete=models.SET_NULL, blank=True, null=True)
 
     def __str__(self):
-        return self.key
+        return '%s' % (self.stem,)
 
     def clean(self):
         if self.key and self.game != self.key.game:

@@ -41,7 +41,7 @@ def game_admin(cls):
     def dispatch_wrapped(self, request, *args, **kwargs):
         super_func = dispatch.__get__(self, type(self))
         game = get_object_or_404(Game.objects, pk=kwargs.pop('pk'))
-        if game.profile != request.profile and not request.user.is_superuser:
+        if game.owner != request.profile and not request.user.is_superuser:
             return permission_denied(request, exception=None)
         self.game = game
         return super_func(request, *args, **kwargs)
@@ -70,11 +70,12 @@ class GameSlotCreate(FormView):
 
     def form_valid(self, form):
         game = self.game
-        next_position = 1 + max(slot.position for slot in game.slot_set.all())
+        pos = 1 + max((slot.position for slot in game.slot_set.all()),
+                      default=0)
         slots = []
         for s in form.cleaned_data['stems']:
-            slots.append(Slot(game=game, stem=s, position=next_position))
-            next_position += 1
+            slots.append(Slot(game=game, stem=s, position=pos))
+            pos += 1
         Slot.objects.bulk_create(slots)
         return redirect('game_admin', pk=game.pk)
 
