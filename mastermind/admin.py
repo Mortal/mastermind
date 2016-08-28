@@ -7,19 +7,19 @@ class ProfileAdmin(admin.ModelAdmin):
 
 
 class GameAdmin(admin.ModelAdmin):
-    list_display = ('__str__',)
+    list_display = ('__str__', 'owner')
 
 
 class OptionAdmin(admin.ModelAdmin):
-    list_display = ('__str__',)
+    list_display = ('__str__', 'game')
 
 
 class SlotAdmin(admin.ModelAdmin):
-    list_display = ('__str__',)
+    list_display = ('__str__', 'game')
 
 
 class SubmissionAdmin(admin.ModelAdmin):
-    list_display = ('__str__',)
+    list_display = ('__str__', 'slot', 'profile')
 
 
 admin.site.register(Profile, ProfileAdmin)

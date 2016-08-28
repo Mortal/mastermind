@@ -16,13 +16,16 @@ Including another URLconf
 from django.conf.urls import url
 from django.contrib import admin
 from mastermind.views import (
-    Home, GameCreate, GameAdmin, GameSlotCreate, GameUnconfirmedOptions,
+    Home, GameCreate, GameSubmission,
+    GameAdmin, GameSlotCreate, GameUnconfirmedOptions,
 )
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^$', Home.as_view(), name='home'),
     url(r'^game/new/$', GameCreate.as_view(), name='game_create'),
+    url(r'^game/(?P<pk>\d+)/$', GameSubmission.as_view(),
+        name='game_submission'),
     url(r'^game/(?P<pk>\d+)/admin/$', GameAdmin.as_view(), name='game_admin'),
     url(r'^game/(?P<pk>\d+)/admin/unconfirmed/$',
         GameUnconfirmedOptions.as_view(),

@@ -20,7 +20,7 @@
 <p>Spil:</p>
 <ul>
 {% for game in games %}
-<li>{{ game }}</li>
+<li><a href="{% url 'game_submission' pk=game.pk %}">{{ game }}</a></li>
 {% endfor %}
 </ul>
 

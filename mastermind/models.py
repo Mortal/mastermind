@@ -50,17 +50,39 @@ class Option(models.Model):
         'self', on_delete=models.CASCADE, blank=True, null=True)
     text = models.CharField(max_length=200, verbose_name='navn')
 
+    @property
+    def is_alias(self):
+        return self.kind == Option.ALIAS
+
+    @property
+    def is_unconfirmed(self):
+        return self.kind == Option.UNCONFIRMED
+
     def clean(self):
         if self.kind == Option.ALIAS:
             if not self.alias_target:
                 raise ValidationError("Alias option must have target")
             elif self.game != self.alias_target.game:
                 raise ValidationError("Alias option must target same game")
+            elif self.alias_target == self:
+                raise ValidationError(
+                    "Alias option must not point to itself")
+            elif self.alias_target.kind != Option.CANONICAL:
+                raise ValidationError(
+                    "Alias option must have canonical target")
         else:
             self.alias_target = None
 
     def __str__(self):
-        return '%s' % (self.text,)
+        if self.is_unconfirmed:
+            return '%s?' % (self.text,)
+        elif self.is_alias:
+            if self.alias_target:
+                return '%s -> %s' % (self.text, self.alias_target.text)
+            else:
+                return '%s -> %s' % (self.text, self.alias_target)
+        else:
+            return '%s' % (self.text,)
 
     class Meta:
         verbose_name = 'valgmulighed'

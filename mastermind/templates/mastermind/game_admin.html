@@ -8,4 +8,13 @@
 {% endfor %}
 <li><a href="{% url 'game_slot_create' pk=game.pk %}">Tilføj indgange</a></li>
 </ul>
+<ul>
+{% for option in game.option_set.all %}
+<li>{{ option.text }}{% if option.is_alias %}
+({{ option.alias_target }})
+{% else %}{% if option.is_unconfirmed %}<a
+href="{% url 'game_unconfirmed_options' pk=game.pk %}">?</a>
+{% endif %}{% endif %}</li>
+{% endfor %}
+</ul>
 {% endblock %}
