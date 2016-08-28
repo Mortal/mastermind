@@ -1,0 +1,11 @@
+{% extends "mastermind/base.html" %}
+{% block title %}{{ game.title }}{% endblock %}
+{% block content %}
+<h1>{{ game.title }}</h1>
+<ul>
+{% for slot in game.slot_set.all %}
+<li>{{ slot }}</li>
+{% endfor %}
+<li><a href="{% url 'game_slot_create' %}">Tilføj indgange</a></li>
+</ul>
+{% endblock %}

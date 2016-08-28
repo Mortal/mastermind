@@ -1,0 +1,9 @@
+{% extends "mastermind/base.html" %}
+{% block title %}{{ game.title }}{% endblock %}
+{% block content %}
+<h1>{{ game.title }}</h1>
+<form method="post">{% csrf_token %}
+{{ form.as_p }}
+<input type="submit" value="Opret indgange" />
+</form>
+{% endblock %}

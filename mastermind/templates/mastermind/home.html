@@ -1,0 +1,27 @@
+{% extends "mastermind/base.html" %}
+{% block fulltitle %}Mastermind{% endblock %}
+{% block content %}
+
+<p>Dine spil:</p>
+
+{% if my_games %}
+<ul>
+{% for game in my_games %}
+<li><a href="{% url 'game_update' pk=game.pk %}">{{ game }}</a></li>
+{% endfor %}
+</ul>
+{% endif %}
+
+<form method="post" action="{% url 'game_create' %}">{% csrf_token %}
+    <input name="title" placeholder="Titel" />
+    <input type="submit" value="Nyt spil" />
+</form>
+
+<p>Spil:</p>
+<ul>
+{% for game in games %}
+<li>{{ game }}</li>
+{% endfor %}
+</ul>
+
+{% endblock %}
