@@ -1,12 +1,24 @@
+{% load staticfiles %}
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8" />
 <title>{% block fulltitle %}{% block title %}{% endblock %} - Mastermind{% endblock %}</title>
+<meta name="viewport"
+content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1" />
+<meta name="referrer" content="origin" />
+<link rel="stylesheet" type="text/css" href="{% static 'mastermind/style.css' %}" />
 {% block head %}{% endblock %}
 </head>
 <body>
+<nav>
+<ul class="container">
+<a href="/"><li>Mastermind</li></a>
+</ul>
+</nav>
+<div class="container">
 {% block content %}
 {% endblock %}
+</div>
 </body>
 </html>
