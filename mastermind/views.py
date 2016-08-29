@@ -9,7 +9,7 @@ from mastermind.forms import (
     GameCreateForm, GameUnconfirmedOptionsForm,
     GameSubmissionForm, GameAdminForm,
 )
-from mastermind.models import Game, Slot, Option, Submission
+from mastermind.models import Game, Slot, Option, Submission, SubmissionSlot
 
 
 class Home(TemplateView):
@@ -233,10 +233,14 @@ class GameSubmission(FormView):
         slots = self.game.slot_set.all()
         slots_initial = {}
         if self.request.profile:
-            qs = Submission.objects.filter(
-                profile=self.request.profile, slot__game=self.game)
-            for s in qs:
-                slots_initial[s.slot] = s.option.text
+            try:
+                submission = Submission.objects.filter(
+                    profile=self.request.profile, game=self.game).latest()
+            except Submission.DoesNotExist:
+                pass
+            else:
+                for s in submission.submissionslot_set.all():
+                    slots_initial[s.slot] = s.option.text
         data = super(GameSubmission, self).get_form_kwargs(**kwargs)
         data['game'] = self.game
         data['slots'] = slots
@@ -245,16 +249,18 @@ class GameSubmission(FormView):
 
     def form_valid(self, form):
         profile = self.request.get_or_create_profile()
-        qs = Submission.objects.filter(
-            profile=profile, slot__game=self.game)
-        submission = {sub.slot: sub for sub in qs}
+        submission = Submission(profile=profile, game=self.game)
+        slots = []
         for slot in form.slots:
             k = 's-%s' % slot.pk
             option = form.cleaned_data[k]
             if not option.pk:
                 option.save()
-            sub = submission.setdefault(slot, Submission(slot=slot,
-                                                         profile=profile))
-            sub.option = option
-            sub.save()
-        return redirect('game_submission', pk=self.game.pk)
+            slots.append(SubmissionSlot(submission=submission,
+                                        slot=slot,
+                                        option=option))
+        submission.save()
+        for s in slots:
+            s.submission = s.submission  # Update submission_id
+            s.save()
+        return redirect('home')

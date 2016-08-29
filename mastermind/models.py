@@ -98,6 +98,7 @@ class Option(models.Model):
         verbose_name = 'valgmulighed'
         verbose_name_plural = verbose_name + 'er'
         ordering = ['game', 'text']
+        unique_together = [('game', 'text')]
 
 
 class Slot(models.Model):
@@ -133,6 +134,7 @@ class Submission(models.Model):
         verbose_name = 'gæt'
         verbose_name_plural = verbose_name
         ordering = ['game', 'profile', 'created_time']
+        get_latest_by = 'created_time'
 
 
 class SubmissionSlot(models.Model):

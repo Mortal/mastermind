@@ -49,6 +49,7 @@ class GameSubmissionForm(forms.Form):
                 initial=slots_initial.get(s, ''), label=s.stem, required=False)
 
     def clean(self):
+        options = {}
         for s in self.slots:
             k = 's-%s' % s.pk
             try:
@@ -56,10 +57,14 @@ class GameSubmissionForm(forms.Form):
             except KeyError:
                 continue
             try:
-                option = Option.objects.get(game=self.game, text=v)
-            except Option.DoesNotExist:
-                option = Option(
-                    game=self.game, text=v, kind=Option.UNCONFIRMED)
+                option = options[v]
+            except KeyError:
+                try:
+                    option = Option.objects.get(game=self.game, text=v)
+                except Option.DoesNotExist:
+                    option = Option(
+                        game=self.game, text=v, kind=Option.UNCONFIRMED)
+                options[v] = option
             self.cleaned_data[k] = option
         return self.cleaned_data
 
