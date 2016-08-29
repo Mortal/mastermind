@@ -20,7 +20,8 @@ class Home(TemplateView):
         profile = self.request.profile
         if profile:
             own_games = profile.game_set.all()
-            own_games = own_games.annotate(Count('submission'))
+            own_games = own_games.annotate(
+                submission_count=Count('submission'))
             my_submissions = profile.submission_set.all()
         else:
             own_games = []
