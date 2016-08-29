@@ -19,6 +19,16 @@ class Profile(models.Model):
 
 
 class Game(models.Model):
+    INITIAL = 'initial'
+    OPEN = 'open'
+    CLOSED = 'closed'
+    MODES = (
+        (INITIAL, 'Ny'),
+        (OPEN, 'Åben'),
+        (CLOSED, 'Lukket'),
+    )
+
+    mode = models.CharField(max_length=20, choices=MODES, default=INITIAL)
     owner = models.ForeignKey(
         Profile, on_delete=models.SET_NULL, blank=True, null=True)
     created_time = models.DateTimeField(auto_now_add=True)
