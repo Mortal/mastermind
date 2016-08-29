@@ -207,6 +207,11 @@ class GameUnconfirmedOptions(FormView):
                 else:
                     canonical = Option(
                         game=self.game, kind=Option.CANONICAL, text=c)
+                    try:
+                        canonical.clean()
+                    except ValidationError as exn:
+                        form.add_error(None, exn)
+                        return self.form_invalid(form)
                     existing[c] = canonical
                     new_options.append(canonical)
             else:
