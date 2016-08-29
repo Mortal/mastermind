@@ -43,14 +43,31 @@ class GameCreate(FormView):
     def form_valid(self, form):
         game = Game(owner=self.request.get_or_create_profile(),
                     title=form.cleaned_data['title'])
-        game.save()
+
         slots = []
         for i, s in enumerate(form.cleaned_data['slots']):
-            slots.append(Slot(game=game, stem=s, position=i + 1))
-        Slot.objects.bulk_create(slots)
+            slot = Slot(game=game, stem=s, position=i + 1)
+            try:
+                slot.clean()
+            except ValidationError as exn:
+                form.add_error('slots', exn)
+                return self.form_invalid(form)
+            slots.append(slot)
+
         options = []
         for o in form.cleaned_data['options']:
-            options.append(Option(game=game, kind=Option.CANONICAL, text=o))
+            option = Option(game=game, kind=Option.CANONICAL, text=o)
+            try:
+                option.clean()
+            except ValidationError as exn:
+                form.add_error('options', exn)
+                return self.form_invalid(form)
+            options.append(option)
+
+        game.save()
+        for x in slots + options:
+            x.game = x.game  # Update game_id
+        Slot.objects.bulk_create(slots)
         Option.objects.bulk_create(options)
         return redirect('game_admin', pk=game.pk)
 
