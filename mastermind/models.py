@@ -69,6 +69,8 @@ class Option(models.Model):
         return self.kind == Option.UNCONFIRMED
 
     def clean(self):
+        if self.text == '':
+            raise ValidationError("Option text must not be empty")
         if self.kind == Option.ALIAS:
             if not self.alias_target:
                 raise ValidationError("Alias option must have target")
