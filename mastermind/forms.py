@@ -215,10 +215,16 @@ class GameAdminForm(forms.Form):
                 self.cleaned_data['new_options'] +
                 [o.text for k, o in self.option_keys.items()
                  if self.cleaned_data[k] == o.text])
+            invalid_options = [o.text for k, o in self.option_keys.items()
+                               if self.cleaned_data[k] != o.text]
             for k in self.slot_keys:
                 key = self.cleaned_data[k + '-k']
-                if key and key not in valid_options:
-                    self.add_error(k + '-k',
-                                   '"%s" peger ikke på sig selv' % key)
+                if key:
+                    if key in invalid_options:
+                        self.add_error(k + '-k',
+                                       '"%s" peger ikke på sig selv' % key)
+                    elif key not in valid_options:
+                        self.add_error(k + '-k',
+                                       '"%s" er ikke en svarmulighed' % key)
 
         return self.cleaned_data
