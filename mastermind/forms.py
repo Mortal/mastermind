@@ -64,6 +64,7 @@ class GameSubmissionForm(forms.Form):
                 except Option.DoesNotExist:
                     option = Option(
                         game=self.game, text=v, kind=Option.UNCONFIRMED)
+                    option.clean()
                 options[v] = option
             self.cleaned_data[k] = option
         return self.cleaned_data
