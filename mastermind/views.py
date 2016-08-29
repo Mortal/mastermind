@@ -4,9 +4,10 @@ from django.views.defaults import permission_denied
 from django.views.generic import TemplateView, FormView
 from django.shortcuts import redirect, get_object_or_404
 # from django.urls import reverse
+from django.db.models import Count
 from mastermind.forms import (
-    GameCreateForm, GameSlotCreateForm, GameUnconfirmedOptionsForm,
-    GameSubmissionForm,
+    GameCreateForm, GameUnconfirmedOptionsForm,
+    GameSubmissionForm, GameAdminForm,
 )
 from mastermind.models import Game, Slot, Option, Submission
 
@@ -16,23 +17,41 @@ class Home(TemplateView):
 
     def get_context_data(self, **kwargs):
         data = super(Home, self).get_context_data(**kwargs)
-        if self.request.profile:
-            data['my_games'] = self.request.profile.game_set.all()
+        profile = self.request.profile
+        if profile:
+            own_games = profile.game_set.all()
+            own_games = own_games.annotate(Count('submission'))
+            my_submissions = profile.submission_set.all()
         else:
-            data['my_games'] = []
-        data['games'] = Game.objects.all()
+            own_games = []
+            my_submissions = []
+        data['own_games'] = own_games
+        data['my_submissions'] = my_submissions
+        data['games'] = Game.objects.filter(mode=Game.OPEN)
+        data['game_create_form'] = GameCreateForm()
         return data
 
 
 class GameCreate(FormView):
     form_class = GameCreateForm
-    template_name = 'mastermind/gamecreateform.html'
+    template_name = 'mastermind/game_create.html'
+
+    def get_initial(self):
+        return {'title': self.request.GET.get('title', '')}
 
     def form_valid(self, form):
-        g = Game(owner=self.request.get_or_create_profile(),
-                 title=form.cleaned_data['title'])
-        g.save()
-        return redirect('game_admin', pk=g.pk)
+        game = Game(owner=self.request.get_or_create_profile(),
+                    title=form.cleaned_data['title'])
+        game.save()
+        slots = []
+        for i, s in enumerate(form.cleaned_data['slots']):
+            slots.append(Slot(game=game, stem=s, position=i + 1))
+        Slot.objects.bulk_create(slots)
+        options = []
+        for o in form.cleaned_data['options']:
+            options.append(Option(game=game, kind=Option.CANONICAL, text=o))
+        Option.objects.bulk_create(options)
+        return redirect('game_admin', pk=game.pk)
 
 
 def single_game_decorator(require_admin):
@@ -70,25 +89,27 @@ single_game_admin = single_game_decorator(True)
 
 
 @single_game_admin
-class GameAdmin(TemplateView):
+class GameAdmin(FormView):
     template_name = 'mastermind/game_admin.html'
+    form_class = GameAdminForm
 
-
-@single_game_admin
-class GameSlotCreate(FormView):
-    template_name = 'mastermind/game_slot_create.html'
-    form_class = GameSlotCreateForm
+    def get_form_kwargs(self, **kwargs):
+        data = super(GameAdmin, self).get_form_kwargs(**kwargs)
+        data['game'] = self.game
+        return data
 
     def form_valid(self, form):
-        game = self.game
-        pos = 1 + max((slot.position for slot in game.slot_set.all()),
-                      default=0)
-        slots = []
-        for s in form.cleaned_data['stems']:
-            slots.append(Slot(game=game, stem=s, position=pos))
-            pos += 1
-        Slot.objects.bulk_create(slots)
-        return redirect('game_admin', pk=game.pk)
+        options = list(self.game.option_set.all())
+        option_map = {o.text: o for o in options}
+        errors = False
+        #for option in options:
+        #    opt
+        #slots = list(self.game.slot_set.all())
+        #for slot in slots:
+        #    data = form.cleaned_slot(slot)
+        #    slot.position = data['position']
+        #    slot.stem =
+        #next_position = len(slots) + 1
 
 
 @single_game_admin

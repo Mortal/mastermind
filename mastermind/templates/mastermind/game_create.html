@@ -1,0 +1,17 @@
+{% extends "mastermind/base.html" %}
+{% block title %}Nyt spil{% endblock %}
+{% block content %}
+<h1>Nyt spil</h1>
+<form method="post">{% csrf_token %}
+<p>Spillets navn: {{ form.title }}</p>
+{{ form.title.errors }}
+<p>Angiv indgange, spillerne kan gætte på (én pr. linje):</p>
+<p>{{ form.slots }}</p>
+{{ form.slots.errors }}
+<p>Angiv gyldige (både korrekte og forkerte) valgmuligheder (én pr. linje):</p>
+<p>{{ form.options }}</p>
+{{ form.options.errors }}
+<p>Senere har du muligheder for at tilføje aliaser til hver valgmulighed.</p>
+<input type="submit" value="Opret spil" />
+</form>
+{% endblock %}

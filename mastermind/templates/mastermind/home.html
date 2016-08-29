@@ -2,26 +2,55 @@
 {% block fulltitle %}Mastermind{% endblock %}
 {% block content %}
 
-<p>Dine spil:</p>
+<h1>Mastermind</h1>
 
-{% if my_games %}
-<ul>
+<h2>Dine gæt</h2>
+
+{% if my_submissions %}
+{% regroup my_submissions by game as my_games %}
+<table>
+<thead>
+<tr><th>Spil</th><th>Antal forsøg</th><th></th></tr>
+</thead>
+<tbody>
 {% for game in my_games %}
-<li><a href="{% url 'game_admin' pk=game.pk %}">{{ game }}</a></li>
+<tr><td>{{ game.grouper }}</td>
+<td>{{ game.list|length }}</td>
+<td><a href="{% url 'game_submission_create' pk=game.grouper.pk %}">Nyt gæt</a>
+</td>
+</tr>
 {% endfor %}
-</ul>
+</tbody>
+</table>
 {% endif %}
 
-<form method="post" action="{% url 'game_create' %}">{% csrf_token %}
-    <input name="title" placeholder="Titel" />
-    <input type="submit" value="Nyt spil" />
-</form>
+<p>Begynd på nyt spil:</p>
 
-<p>Spil:</p>
 <ul>
 {% for game in games %}
-<li><a href="{% url 'game_submission' pk=game.pk %}">{{ game }}</a></li>
+<li><a href="{% url 'game_submission_create' pk=game.pk %}">{{ game }}</a></li>
 {% endfor %}
 </ul>
+
+<h2>Dine spil</h2>
+
+{% if own_games %}
+<table>
+<thead>
+<tr><th>Navn</th><th>Gæt</th></tr>
+</thead>
+<tbody>
+{% for game in own_games %}
+<tr><td><a href="{% url 'game_admin' pk=game.pk %}">{{ game }}</a></td>
+<td>{{ game.submission_count }}</td></tr>
+{% endfor %}
+</tbody>
+</table>
+{% endif %}
+
+<form method="get" action="{% url 'game_create' %}">
+    <input placeholder="Titel" name="title" />
+    <input type="submit" value="Opret spil" />
+</form>
 
 {% endblock %}

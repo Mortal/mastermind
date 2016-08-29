@@ -2,19 +2,54 @@
 {% block title %}{{ game.title }}{% endblock %}
 {% block content %}
 <h1>{{ game.title }}</h1>
-<ul>
-{% for slot in game.slot_set.all %}
-<li>{{ slot }}</li>
+
+<form method="post">{% csrf_token %}
+
+<p><input type="submit" value="Gem ændringer" /></p>
+
+<h2>Indgange</h2>
+
+<table>
+<thead>
+<tr>
+<th>Position</th>
+<th>Navn</th>
+<th>Korrekt svar</th>
+</tr>
+</thead>
+<tbody>
+{% for slot in form.slots %}
+<tr><td>{{ slot.position }}{{ slot.position.errors }}</td>
+<td>{{ slot.stem }}{{ slot.stem.errors }}</td>
+<td>{{ slot.key }}{{ slot.key.errors }}</td></tr>
 {% endfor %}
-<li><a href="{% url 'game_slot_create' pk=game.pk %}">Tilføj indgange</a></li>
-</ul>
-<ul>
-{% for option in game.option_set.all %}
-<li>{{ option.text }}{% if option.is_alias %}
-({{ option.alias_target }})
-{% else %}{% if option.is_unconfirmed %}<a
-href="{% url 'game_unconfirmed_options' pk=game.pk %}">?</a>
-{% endif %}{% endif %}</li>
+</tbody>
+</table>
+
+<p>Tilføj indgange, én pr. linje:</p>
+{{ form.new_slots }}{{ form.new_slots.errors }}
+
+<h2>Svarmuligheder</h2>
+
+<table>
+<thead>
+<tr>
+<th>Svar</th>
+<th>Alias af</th>
+</tr>
+</thead>
+<tbody>
+{% for option in form.game_options %}
+<tr>
+<td>{{ option.text }}</td>
+<td>{{ option.alias_target }}</td>
+</tr>
 {% endfor %}
-</ul>
+</tbody>
+</table>
+
+<p>Tilføj svarmuligheder, én pr. linje:</p>
+{{ form.new_options }}{{ form.new_options.errors }}
+
+</form>
 {% endblock %}

@@ -1,17 +1,30 @@
+import collections
 from django import forms
 from mastermind.models import Option
 
 
 class GameCreateForm(forms.Form):
     title = forms.CharField()
+    slots = forms.CharField(widget=forms.Textarea)
+    options = forms.CharField(widget=forms.Textarea)
 
+    def clean_slots(self):
+        s = self.cleaned_data['slots']
+        slots = [line.strip() for line in s.splitlines() if line.strip()]
+        for k, v in collections.Counter(slots).items():
+            if v > 1:
+                self.add_error(
+                    'slots', '"%s" forekommer flere gange' % k)
+        return slots
 
-class GameSlotCreateForm(forms.Form):
-    stems = forms.CharField(widget=forms.Textarea)
-
-    def clean_stems(self):
-        s = self.cleaned_data['stems']
-        return s.splitlines()
+    def clean_options(self):
+        s = self.cleaned_data['options']
+        options = [line.strip() for line in s.splitlines() if line.strip()]
+        for k, v in collections.Counter(options).items():
+            if v > 1:
+                self.add_error(
+                    'options', '"%s" forekommer flere gange' % k)
+        return options
 
 
 class GameUnconfirmedOptionsForm(forms.Form):
@@ -48,4 +61,102 @@ class GameSubmissionForm(forms.Form):
                 option = Option(
                     game=self.game, text=v, kind=Option.UNCONFIRMED)
             self.cleaned_data[k] = option
+        return self.cleaned_data
+
+
+class GameAdminForm(forms.Form):
+    new_slots = forms.CharField(widget=forms.Textarea, required=False)
+    new_options = forms.CharField(widget=forms.Textarea, required=False)
+
+    def __init__(self, **kwargs):
+        self.game = kwargs.pop('game')
+        super(GameAdminForm, self).__init__(**kwargs)
+        self.slot_keys = collections.OrderedDict()
+        self.option_keys = collections.OrderedDict()
+        for slot in self.game.slot_set.all():
+            k = 's-%s' % slot.pk
+            # Slot position
+            self.fields[k + '-p'] = forms.IntegerField(
+                initial=slot.position)
+            # Slot stem
+            self.fields[k + '-s'] = forms.CharField(
+                initial=slot.stem)
+            # Slot key
+            key_initial = ''
+            if slot.key:
+                key_initial = slot.key.text
+            self.fields[k + '-k'] = forms.CharField(
+                initial=key_initial, required=False)
+            self.slot_keys[k] = slot
+
+        options = (
+            o
+            for kind in (Option.CANONICAL, Option.UNCONFIRMED, Option.ALIAS)
+            for o in self.game.option_set.filter(kind=kind))
+
+        for option in options:
+            k = 'o-%s' % option.pk
+            # Option alias target
+            if option.kind == Option.CANONICAL:
+                t = option.text
+            elif option.kind == Option.ALIAS:
+                t = option.alias_target.text
+            elif option.kind == Option.UNCONFIRMED:
+                t = ''
+            self.fields[k] = forms.CharField(initial=t)
+            self.option_keys[k] = option
+
+    def slots(self):
+        return [
+            dict(position=self[k + '-p'],
+                 stem=self[k + '-s'],
+                 key=self[k + '-k'])
+            for k in self.slot_keys]
+
+    def cleaned_slot(self, slot):
+        k = 's-%s' % slot.pk
+        return dict(position=self.cleaned_data[k + '-p'],
+                    stem=self.cleaned_data[k + '-s'],
+                    key=self.cleaned_data[k + '-k'])
+
+    def game_options(self):
+        return [
+            dict(text=o.text,
+                 alias_target=self[k])
+            for k, o in self.option_keys.items()]
+
+    def cleaned_option(self, option):
+        k = 'o-%s' % option.pk
+        return dict(alias_target=self.cleaned_data[k])
+
+    def clean_new_slots(self):
+        s = self.cleaned_data['new_slots']
+        return [line.strip() for line in s.splitlines() if line.strip()]
+
+    def clean_new_options(self):
+        s = self.cleaned_data['new_options']
+        return [line.strip() for line in s.splitlines() if line.strip()]
+
+    def clean(self):
+        if all(k + '-p' in self.cleaned_data for k in self.slot_keys):
+            # Clean slot positions
+            slot_keys = list(self.slot_keys)
+            # The stable sort ensures that multiple slots with same input pos.
+            # are kept in the same order as they were before.
+            slot_keys.sort(key=lambda k: self.cleaned_data[k + '-p'])
+            for i, k in enumerate(slot_keys):
+                self.cleaned_data[k + '-p'] = i + 1
+
+        # Validate new_options
+        existing_option_text = set(o.text for o in self.option_keys.values())
+        new_option_text = set()
+        for o in self.cleaned_data.get('new_options', ()):
+            if o in existing_option_text:
+                self.add_error(
+                    'new_options', '"%s" findes allerede' % o)
+            elif o in new_option_text:
+                self.add_error(
+                    'new_options', '"%s" findes mere end én gang' % o)
+            new_option_text.add(o)
+
         return self.cleaned_data

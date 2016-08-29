@@ -19,7 +19,7 @@ class SlotAdmin(admin.ModelAdmin):
 
 
 class SubmissionAdmin(admin.ModelAdmin):
-    list_display = ('__str__', 'slot', 'profile')
+    list_display = ('__str__', 'game', 'profile', 'created_time')
 
 
 admin.site.register(Profile, ProfileAdmin)

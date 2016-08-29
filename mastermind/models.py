@@ -121,20 +121,35 @@ class Slot(models.Model):
 
 
 class Submission(models.Model):
+    game = models.ForeignKey(Game, on_delete=models.CASCADE)
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
-    slot = models.ForeignKey(Slot, on_delete=models.CASCADE)
-    option = models.ForeignKey(Option, on_delete=models.CASCADE)
+    created_time = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return '%s: %s' % (self.slot, self.option)
-
-    def clean(self):
-        if self.slot.game != self.option.game:
-            raise ValidationError(
-                "Submission option must target same game as slot")
+        fields = (self.game, self.profile, self.created_time)
+        return '<Submission for %s by %s on %s>' % fields
 
     class Meta:
         verbose_name = 'gæt'
         verbose_name_plural = verbose_name
-        ordering = ['slot', 'profile']
-        unique_together = [('profile', 'slot')]
+        ordering = ['game', 'profile', 'created_time']
+
+
+class SubmissionSlot(models.Model):
+    submission = models.ForeignKey(Submission, on_delete=models.CASCADE)
+    slot = models.ForeignKey(Slot, on_delete=models.CASCADE)
+    option = models.ForeignKey(Option, on_delete=models.CASCADE)
+
+    def clean(self):
+        if self.slot.game != self.submission.game:
+            raise ValidationError(
+                "SubmissionSlot slot targets wrong game")
+        if self.option.game != self.submission.game:
+            raise ValidationError(
+                "SubmissionSlot option targets wrong game")
+
+    class Meta:
+        verbose_name = 'gætindgang'
+        verbose_name_plural = verbose_name + 'e'
+        ordering = ['submission', 'slot']
+        unique_together = [('submission', 'slot')]

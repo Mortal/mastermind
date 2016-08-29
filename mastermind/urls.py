@@ -17,7 +17,7 @@ from django.conf.urls import url
 from django.contrib import admin
 from mastermind.views import (
     Home, GameCreate, GameSubmission,
-    GameAdmin, GameSlotCreate, GameUnconfirmedOptions,
+    GameAdmin, GameUnconfirmedOptions,
 )
 
 urlpatterns = [
@@ -25,11 +25,9 @@ urlpatterns = [
     url(r'^$', Home.as_view(), name='home'),
     url(r'^game/new/$', GameCreate.as_view(), name='game_create'),
     url(r'^game/(?P<pk>\d+)/$', GameSubmission.as_view(),
-        name='game_submission'),
+        name='game_submission_create'),
     url(r'^game/(?P<pk>\d+)/admin/$', GameAdmin.as_view(), name='game_admin'),
     url(r'^game/(?P<pk>\d+)/admin/unconfirmed/$',
         GameUnconfirmedOptions.as_view(),
         name='game_unconfirmed_options'),
-    url(r'^game/(?P<pk>\d+)/admin/slot/new/$', GameSlotCreate.as_view(),
-        name='game_slot_create'),
 ]
