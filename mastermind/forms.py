@@ -195,9 +195,6 @@ class GameAdminForm(forms.Form):
             alias_targets = {o.text: self.cleaned_data[k]
                              for k, o in self.option_keys.items()}
 
-            for v in self.cleaned_data['new_options']:
-                alias_targets[v] = v
-
             for k, v in alias_targets.items():
                 if v == '':
                     pass
@@ -206,9 +203,9 @@ class GameAdminForm(forms.Form):
                                    '"%s" peger på "%s" ' % (k, v) +
                                    'som ikke peger på sig selv')
                 elif v not in alias_targets:
-                    # Add target as new option
-                    self.cleaned_data['new_options'].append(v)
-                    alias_targets[v] = v
+                    if v not in self.cleaned_data['new_options']:
+                        # Add target as new option
+                        self.cleaned_data['new_options'].append(v)
 
         has_all_keys = all(k + '-k' in self.cleaned_data
                            for k in self.slot_keys)
