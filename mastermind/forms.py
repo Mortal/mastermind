@@ -1,30 +1,13 @@
 import collections
 from django import forms
 from mastermind.models import Option, Game
+from mastermind.fields import DistinctLinesField
 
 
 class GameCreateForm(forms.Form):
     title = forms.CharField()
-    slots = forms.CharField(widget=forms.Textarea)
-    options = forms.CharField(widget=forms.Textarea)
-
-    def clean_slots(self):
-        s = self.cleaned_data['slots']
-        slots = [line.strip() for line in s.splitlines() if line.strip()]
-        for k, v in collections.Counter(slots).items():
-            if v > 1:
-                self.add_error(
-                    'slots', '"%s" forekommer flere gange' % k)
-        return slots
-
-    def clean_options(self):
-        s = self.cleaned_data['options']
-        options = [line.strip() for line in s.splitlines() if line.strip()]
-        for k, v in collections.Counter(options).items():
-            if v > 1:
-                self.add_error(
-                    'options', '"%s" forekommer flere gange' % k)
-        return options
+    slots = DistinctLinesField()
+    options = DistinctLinesField()
 
 
 class GameUnconfirmedOptionsForm(forms.Form):
@@ -71,8 +54,8 @@ class GameSubmissionForm(forms.Form):
 
 
 class GameAdminForm(forms.Form):
-    new_slots = forms.CharField(widget=forms.Textarea, required=False)
-    new_options = forms.CharField(widget=forms.Textarea, required=False)
+    new_slots = DistinctLinesField(required=False)
+    new_options = DistinctLinesField(required=False)
 
     def __init__(self, **kwargs):
         self.game = kwargs.pop('game')
@@ -146,37 +129,20 @@ class GameAdminForm(forms.Form):
         return dict(alias_target=self.cleaned_data[k])
 
     def clean_new_slots(self):
-        s = self.cleaned_data['new_slots']
-        new_slots = [line.strip() for line in s.splitlines() if line.strip()]
-
-        existing_slot_stems = set(s.stem for s in self.slot_keys.values())
-        new_slot_stems = set()
-        for s in new_slots:
-            if s in existing_slot_stems:
-                self.add_error(
-                    'new_slots', '"%s" findes allerede' % s)
-            elif s in new_slot_stems:
-                self.add_error(
-                    'new_slots', '"%s" findes mere end én gang' % s)
-            new_slot_stems.add(s)
-        return new_slots
+        new_slots = set(self.cleaned_data['new_slots'])
+        existing_slots = set(s.stem for s in self.slot_keys.values())
+        e = ', '.join('"%s"' % v for v in new_slots & existing_slots)
+        if e:
+            self.add_error('new_slots', '%s findes allerede' % e)
+        return self.cleaned_data['new_slots']
 
     def clean_new_options(self):
-        s = self.cleaned_data['new_options']
-        new_options = [line.strip() for line in s.splitlines() if line.strip()]
-
-        existing_option_text = set(o.text for o in self.option_keys.values())
-        new_option_text = set()
-        for o in new_options:
-            if o in existing_option_text:
-                self.add_error(
-                    'new_options', '"%s" findes allerede' % o)
-            elif o in new_option_text:
-                self.add_error(
-                    'new_options', '"%s" findes mere end én gang' % o)
-            new_option_text.add(o)
-
-        return new_options
+        new_options = set(self.cleaned_data['new_options'])
+        existing_options = set(o.text for o in self.option_keys.values())
+        e = ', '.join('"%s"' % v for v in new_options & existing_options)
+        if e:
+            self.add_error('new_options', '%s findes allerede' % e)
+        return self.cleaned_data['new_options']
 
     def clean(self):
         has_all_positions = all(k + '-p' in self.cleaned_data
