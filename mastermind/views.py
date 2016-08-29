@@ -252,6 +252,22 @@ class GameSubmission(FormView):
     form_class = GameSubmissionForm
     template_name = 'mastermind/game_submission.html'
 
+    def get_context_data(self, **kwargs):
+        data = super(GameSubmission, self).get_context_data(**kwargs)
+        if self.request.profile:
+            qs = Submission.objects.filter(profile=self.request.profile,
+                                           game=self.game)
+        else:
+            qs = []
+        #for submission in qs:
+        #    slot_dict = {
+        #        s.slot: s for s in submission.submissionslot_set.all()}
+        #    slots = []
+        #    for slot in submission.slot_set.all():
+        #        if slot in slot_dict:
+        #            slots.append(
+        return data
+
     def get_form_kwargs(self, **kwargs):
         slots = self.game.slot_set.all()
         slots_initial = {}
