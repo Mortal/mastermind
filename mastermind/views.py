@@ -100,16 +100,55 @@ class GameAdmin(FormView):
 
     def form_valid(self, form):
         options = list(self.game.option_set.all())
-        option_map = {o.text: o for o in options}
-        errors = False
-        #for option in options:
-        #    opt
-        #slots = list(self.game.slot_set.all())
-        #for slot in slots:
-        #    data = form.cleaned_slot(slot)
-        #    slot.position = data['position']
-        #    slot.stem =
-        #next_position = len(slots) + 1
+        new_options = []
+        for option_text in form.cleaned_data['new_options']:
+            option = Option(game=self.game, text=option_text,
+                            kind=Option.CANONICAL)
+            option.clean()
+            new_options.append(option)
+        option_map = {o.text: o for o in options + new_options}
+        for option in options:
+            data = form.cleaned_option(option)
+            target = data['alias_target']
+            if target == '':
+                option.kind = Option.UNCONFIRMED
+            elif target == option.text:
+                option.kind = Option.CANONICAL
+            else:
+                option.kind = Option.ALIAS
+                option.alias_target = option_map[target]
+            option.clean()
+
+        slots = list(self.game.slot_set.all())
+        for slot in slots:
+            data = form.cleaned_slot(slot)
+            slot.position = data['position']
+            slot.stem = data['stem']
+            if data['key']:
+                slot.key = option_map[data['key']]
+            else:
+                slot.key = None
+
+        next_position = len(slots) + 1
+
+        for stem in form.cleaned_data['new_slots']:
+            slots.append(Slot(
+                game=self.game,
+                position=next_position,
+                stem=stem,
+                key=None))
+
+        for o in new_options + options:
+            o.alias_target = o.alias_target  # Update alias_target_id
+            o.save()
+        for s in slots:
+            s.key = s.key  # Update key_id
+            s.save()
+
+        self.game.mode = form.cleaned_data['mode']
+        self.game.save()
+
+        return redirect('game_admin', pk=self.game.pk)
 
 
 @single_game_admin

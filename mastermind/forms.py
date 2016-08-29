@@ -1,6 +1,6 @@
 import collections
 from django import forms
-from mastermind.models import Option
+from mastermind.models import Option, Game
 
 
 class GameCreateForm(forms.Form):
@@ -71,6 +71,13 @@ class GameAdminForm(forms.Form):
     def __init__(self, **kwargs):
         self.game = kwargs.pop('game')
         super(GameAdminForm, self).__init__(**kwargs)
+        if self.game.mode == Game.INITIAL:
+            mode_choices = Game.MODES
+        else:
+            mode_choices = [(k, v) for k, v in Game.MODES
+                            if k != Game.INITIAL]
+        self.fields['mode'] = forms.ChoiceField(
+            choices=mode_choices, initial=self.game.mode)
         self.slot_keys = collections.OrderedDict()
         self.option_keys = collections.OrderedDict()
         for slot in self.game.slot_set.all():
@@ -131,14 +138,41 @@ class GameAdminForm(forms.Form):
 
     def clean_new_slots(self):
         s = self.cleaned_data['new_slots']
-        return [line.strip() for line in s.splitlines() if line.strip()]
+        new_slots = [line.strip() for line in s.splitlines() if line.strip()]
+
+        existing_slot_stems = set(s.stem for s in self.slot_keys.values())
+        new_slot_stems = set()
+        for s in new_slots:
+            if s in existing_slot_stems:
+                self.add_error(
+                    'new_slots', '"%s" findes allerede' % s)
+            elif s in new_slot_stems:
+                self.add_error(
+                    'new_slots', '"%s" findes mere end én gang' % s)
+            new_slot_stems.add(s)
+        return new_slots
 
     def clean_new_options(self):
         s = self.cleaned_data['new_options']
-        return [line.strip() for line in s.splitlines() if line.strip()]
+        new_options = [line.strip() for line in s.splitlines() if line.strip()]
+
+        existing_option_text = set(o.text for o in self.option_keys.values())
+        new_option_text = set()
+        for o in new_options:
+            if o in existing_option_text:
+                self.add_error(
+                    'new_options', '"%s" findes allerede' % o)
+            elif o in new_option_text:
+                self.add_error(
+                    'new_options', '"%s" findes mere end én gang' % o)
+            new_option_text.add(o)
+
+        return new_options
 
     def clean(self):
-        if all(k + '-p' in self.cleaned_data for k in self.slot_keys):
+        has_all_positions = all(k + '-p' in self.cleaned_data
+                                for k in self.slot_keys)
+        if has_all_positions:
             # Clean slot positions
             slot_keys = list(self.slot_keys)
             # The stable sort ensures that multiple slots with same input pos.
@@ -147,16 +181,37 @@ class GameAdminForm(forms.Form):
             for i, k in enumerate(slot_keys):
                 self.cleaned_data[k + '-p'] = i + 1
 
-        # Validate new_options
-        existing_option_text = set(o.text for o in self.option_keys.values())
-        new_option_text = set()
-        for o in self.cleaned_data.get('new_options', ()):
-            if o in existing_option_text:
-                self.add_error(
-                    'new_options', '"%s" findes allerede' % o)
-            elif o in new_option_text:
-                self.add_error(
-                    'new_options', '"%s" findes mere end én gang' % o)
-            new_option_text.add(o)
+        has_all_options = all(k in self.cleaned_data for k in self.option_keys)
+        if has_all_options:
+            # Clean alias targets
+            alias_targets = {o.text: self.cleaned_data[k]
+                             for k, o in self.option_keys.items()}
+
+            for v in self.cleaned_data['new_options']:
+                alias_targets[v] = v
+
+            for k, v in alias_targets.items():
+                if alias_targets.get(v, v) != v:
+                    self.add_error('new_options',
+                                   '"%s" peger på "%s" ' % (k, v) +
+                                   'som ikke peger på sig selv')
+                elif v not in alias_targets:
+                    # Add target as new option
+                    self.cleaned_data['new_options'].append(v)
+                    alias_targets[v] = v
+
+        has_all_keys = all(k + '-k' in self.cleaned_data
+                           for k in self.slot_keys)
+        has_new_options = 'new_options' in self.cleaned_data
+        if has_all_keys and has_all_options and has_new_options:
+            valid_options = (
+                self.cleaned_data['new_options'] +
+                [o.text for k, o in self.option_keys.items()
+                 if self.cleaned_data[k] == o.text])
+            for k in self.slot_keys:
+                key = self.cleaned_data[k + '-k']
+                if key and key not in valid_options:
+                    self.add_error(k + '-k',
+                                   '"%s" peger ikke på sig selv' % key)
 
         return self.cleaned_data
