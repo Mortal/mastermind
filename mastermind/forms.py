@@ -199,7 +199,9 @@ class GameAdminForm(forms.Form):
                 alias_targets[v] = v
 
             for k, v in alias_targets.items():
-                if alias_targets.get(v, v) != v:
+                if v == '':
+                    pass
+                elif alias_targets.get(v, v) != v:
                     self.add_error('new_options',
                                    '"%s" peger på "%s" ' % (k, v) +
                                    'som ikke peger på sig selv')
