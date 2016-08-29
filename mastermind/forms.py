@@ -39,6 +39,9 @@ class GameSubmissionForm(forms.Form):
                 v = self.cleaned_data[k]
             except KeyError:
                 continue
+            if not v:
+                self.cleaned_data[k] = None
+                continue
             try:
                 option = options[v]
             except KeyError:

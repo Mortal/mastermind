@@ -277,6 +277,8 @@ class GameSubmission(FormView):
         for slot in form.slots:
             k = 's-%s' % slot.pk
             option = form.cleaned_data[k]
+            if option is None:
+                continue
             if not option.pk:
                 option.save()
             slots.append(SubmissionSlot(submission=submission,
