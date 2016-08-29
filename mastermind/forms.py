@@ -111,11 +111,14 @@ class GameAdminForm(forms.Form):
             # Option alias target
             if option.kind == Option.CANONICAL:
                 t = option.text
+                r = True
             elif option.kind == Option.ALIAS:
                 t = option.alias_target.text
+                r = True
             elif option.kind == Option.UNCONFIRMED:
                 t = ''
-            self.fields[k] = forms.CharField(initial=t)
+                r = False
+            self.fields[k] = forms.CharField(initial=t, required=r)
             self.option_keys[k] = option
 
     def slots(self):
