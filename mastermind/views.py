@@ -1,6 +1,6 @@
 import functools
 from django.core.exceptions import ValidationError
-from django.views.defaults import permission_denied
+from django.views.defaults import permission_denied, page_not_found
 from django.views.generic import TemplateView, FormView
 from django.shortcuts import redirect, get_object_or_404
 # from django.urls import reverse
@@ -103,7 +103,8 @@ def single_game_decorator(middleware):
 
 @single_game_decorator
 def single_game(request, game):
-    pass
+    if game.mode != Game.OPEN:
+        return page_not_found(request, exception=None)
 
 
 @single_game_decorator
