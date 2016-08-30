@@ -72,7 +72,7 @@ class GameCreate(FormView):
         return redirect('game_admin', pk=game.pk)
 
 
-def single_game_decorator(require_admin):
+def single_game_decorator(middleware):
     def decorator(cls):
         dispatch = cls.dispatch
         get_context_data = cls.get_context_data
@@ -81,10 +81,9 @@ def single_game_decorator(require_admin):
         def dispatch_wrapped(self, request, *args, **kwargs):
             super_func = dispatch.__get__(self, type(self))
             game = get_object_or_404(Game.objects, pk=kwargs.pop('pk'))
-            has_access = (game.owner == request.profile or
-                          request.user.is_superuser)
-            if require_admin and not has_access:
-                return permission_denied(request, exception=None)
+            response = middleware(request, game)
+            if response is not None:
+                return response
             self.game = game
             return super_func(request, *args, **kwargs)
 
@@ -102,8 +101,15 @@ def single_game_decorator(require_admin):
     return decorator
 
 
-single_game = single_game_decorator(False)
-single_game_admin = single_game_decorator(True)
+@single_game_decorator
+def single_game(request, game):
+    pass
+
+
+@single_game_decorator
+def single_game_admin(request, game):
+    if not (game.owner == request.profile or request.user.is_superuser):
+        return permission_denied(request, exception=None)
 
 
 @single_game_admin
