@@ -6,4 +6,28 @@
 {{ form.as_p }}
 <input type="submit" value="Indsend gæt" />
 </form>
+
+{% if submissions %}
+<h2>Tidligere gæt</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Tidspunkt</th>
+            {% for slot in slots %}
+            <th>{{ slot }}</th>
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in submissions %}
+        <tr>
+            <td>{{ r.submission.created_time }}</td>
+            {% for cell in r.slots %}
+            <td>{{ cell.option.text }} {{ cell.information }}</td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
 {% endblock %}

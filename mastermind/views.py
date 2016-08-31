@@ -261,18 +261,43 @@ class GameSubmission(FormView):
 
     def get_context_data(self, **kwargs):
         data = super(GameSubmission, self).get_context_data(**kwargs)
+        slots = list(self.game.slot_set.all())
+        correct_options = set(s.key for s in slots if s.key is not None)
         if self.request.profile:
-            qs = Submission.objects.filter(profile=self.request.profile,
-                                           game=self.game)
+            submissions = Submission.objects.filter(
+                profile=self.request.profile, game=self.game)
+            submission_slot_qs = SubmissionSlot.objects.filter(
+                submission__in=submissions)
+            submission_slots = {(ss.submission, ss.slot): ss.option
+                                for ss in submission_slot_qs}
         else:
-            qs = []
-        #for submission in qs:
-        #    slot_dict = {
-        #        s.slot: s for s in submission.submissionslot_set.all()}
-        #    slots = []
-        #    for slot in submission.slot_set.all():
-        #        if slot in slot_dict:
-        #            slots.append(
+            submissions = []
+
+        rows = []
+        for submission in submissions:
+            row = []
+            for slot in slots:
+                try:
+                    chosen = submission_slots[submission, slot]
+                except KeyError:
+                    row.append(dict())
+                    continue
+                if chosen.kind == Option.ALIAS:
+                    option = chosen.alias_target
+                else:
+                    option = chosen
+                if slot.key is None or option.kind == Option.UNCONFIRMED:
+                    information = '?'  # 'unknown'
+                elif slot.key == option:
+                    information = '\N{BLACK CIRCLE}'  # 'correct'
+                elif option in correct_options:
+                    information = '\N{WHITE CIRCLE}'  # 'other'
+                else:
+                    information = '\N{HEAVY BALLOT X}'  # 'wrong'
+                row.append(dict(option=chosen, information=information))
+            rows.append(dict(submission=submission, slots=row))
+        data['slots'] = slots
+        data['submissions'] = rows
         return data
 
     def get_form_kwargs(self, **kwargs):
@@ -311,4 +336,4 @@ class GameSubmission(FormView):
         for s in slots:
             s.submission = s.submission  # Update submission_id
             s.save()
-        return redirect('home')
+        return redirect('game_submission_create', pk=self.game.pk)
